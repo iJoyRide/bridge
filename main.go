@@ -190,7 +190,7 @@ func startGame(bot *tgbotapi.BotAPI, chatID int64) {
 }
 
 func main() {
-	bot, err := tgbotapi.NewBotAPI("6863492345:AAH-ak_depbfolBuCoI7PzfHu4ajJZ0L030")
+	bot, err := tgbotapi.NewBotAPI("TELEGRAM_APITOKEN")
 	if err != nil {
 		log.Fatalf("Error creating bot: %v", err)
 	}
