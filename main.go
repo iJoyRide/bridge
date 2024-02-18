@@ -1,7 +1,9 @@
 package main
 
 import (
-	"github.com/iJoyRide/bridge/init"
+	game "bridge"
+
+	game "github.com/iJoyRide/bridge/init"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 )
@@ -14,5 +16,5 @@ func main() {
 
 	bot.Debug = true
 
-	init.InitializeGame(bot)
+	game.InitializeGame(bot)
 }
