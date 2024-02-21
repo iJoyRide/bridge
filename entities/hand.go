@@ -4,13 +4,13 @@ import(
 )
 type Hand struct{
 	player *tgbotapi.User
-	cards []Card
+	Cards []Card
 }
 
 func NewHand (player *tgbotapi.User, cards []Card) *Hand{
 	return &Hand{
 		player:player,
-		cards:cards,
+		Cards:cards,
 	}
 }
 

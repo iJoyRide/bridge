@@ -5,13 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
-	"strconv"
-
+	// "strconv"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 )
 
 type Game struct{
-	bot *tgbotapi.BotAPI
+	Bot *tgbotapi.BotAPI
 	ChatID int64
 	ID uint32
 	Players []*tgbotapi.User
@@ -23,7 +22,7 @@ type Game struct{
 
 func NewGame (bot *tgbotapi.BotAPI, chatID int64) *Game{
 	return &Game{
-		bot:bot,
+		Bot:bot,
 		ChatID: chatID,
 		ID: rand.Uint32(),
 		Players: []*tgbotapi.User{},
@@ -44,34 +43,9 @@ func (g *Game) StartGame (){
 		g.hands = append(g.hands, Hand{g.Players[1],tmp[13:26]})
 		g.hands = append(g.hands, Hand{g.Players[2],tmp[26:39]})
 		g.hands = append(g.hands, Hand{g.Players[3],tmp[39:]})
-
-		// var label []string
-		// var data []string
-
-		//Print out hands
-		var cards []tgbotapi.InlineQueryResultArticle
-		for _,e := range g.hands{
-			fmt.Printf("Player %s\n", e.player.UserName)
-			for idx,card := range e.cards{
-				// data = append(data, fmt.Sprintf("%s_%d",card.Suit,card.Rank))
-				// label = append(label, fmt.Sprintf("%s %d",card.Suit,card.Rank))
-				cards = append(cards, tgbotapi.NewInlineQueryResultArticle(strconv.Itoa(idx),fmt.Sprintf("%s %d",card.Suit,card.Rank),fmt.Sprintf("%s_%d",card.Suit,card.Rank)))
-			}
-			var cardInterfaces []interface{}
-			for _,card := range cards{
-				cardInterfaces = append(cardInterfaces, card)
-			}
-			inlineConfig:= tgbotapi.InlineConfig{
-				InlineQueryID: strconv.Itoa(e.player.ID),
-				Results: cardInterfaces,
-			}
-			g.bot.AnswerInlineQuery(inlineConfig)
-		}
-
-
-
 	}
 }
+
 
 func (g *Game) FindPlayer (user *tgbotapi.User) (bool,int){
 	for idx,player := range g.Players{
@@ -112,6 +86,15 @@ func (g *Game) CheckPlayers (bot *tgbotapi.BotAPI, chatID int64, roomID uint32,m
 	} else{
 		fmt.Println("Room is not full...")
 	}
+}
+
+func (g *Game) GetHand (idx int) (Hand,error){
+	for index,hand := range g.hands{
+		if index==idx{
+			return hand,nil
+		}
+	}
+	return Hand{},errors.New("Hand not found")
 }
 
 

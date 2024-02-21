@@ -38,15 +38,31 @@ func (mc *MessageController) StartListening() {
 		log.Fatal(err)
 	}
 	for update := range updates {
-		if update.Message == nil{
-			if update.CallbackQuery !=nil{
-				mc.HandleCallbackQuery(update.CallbackQuery)
-			} else{
+		if update.Message != nil{
+			mc.HandleMessage(update)
+			continue
+		}
+		if update.CallbackQuery != nil{
+			mc.HandleCallbackQuery(update.CallbackQuery)
+			continue
+		}
+		if update.InlineQuery != nil{
+			err:=mc.HandleInlineQuery(update.InlineQuery)
+			if err!=nil{
+				log.Println(err)
+			}else{
 				continue
 			}
-		} else{
-			mc.HandleMessage(update)
 		}
+		// if update.Message == nil{
+		// 	if update.CallbackQuery !=nil{
+		// 		mc.HandleCallbackQuery(update.CallbackQuery)
+		// 	} else{
+		// 		continue
+		// 	}
+		// } else{
+		// 	mc.HandleMessage(update)
+		// }
 	}
 }
 
@@ -88,9 +104,9 @@ func (mc *MessageController) HandleMessage(update tgbotapi.Update) {
 		command := update.Message.Command()
 		switch command {
 		case "start":
-			utils.SendMessage(mc.bot,update.Message.Chat.ID, "Welcome to Bridge! Bridge is a four-player partnership trick-taking game with thirteen tricks per deal.\n\n/play_game : to play\n/leave: to leave\n/help: for more commands")
+			utils.SendMessage(mc.bot,update.Message.Chat.ID, "Welcome to Bridge! Bridge is a four-player partnership trick-taking game with thirteen tricks per deal\n\n/help - For more commands")
 		case "help":
-			utils.SendMessage(mc.bot,update.Message.Chat.ID, "Available commands:\n/start - Start the bot\n/help - Display help message")
+			utils.SendMessage(mc.bot,update.Message.Chat.ID, "Available commands:\n/start - Start the bot\n/play_game - Start a new game\n/leave - Leave game")
 		case "play_game":
 			// Check game controller
 			if !mc.CheckOngoingController(update.Message.Chat.ID){
@@ -154,13 +170,81 @@ func (mc *MessageController) HandleCallbackQuery (query *tgbotapi.CallbackQuery)
 	}
 }
 
-func (mc *MessageController) FindGameController (chatID int64) (*GameController,error){
-	for _,controller := range mc.GameControllers{
-		if controller.chatID == chatID{
-			return controller,nil
+func (mc *MessageController) HandleInlineQuery (query *tgbotapi.InlineQuery) error{
+	//Get User's cards
+	user := query.From
+	currentGC,err := mc.FindGameController(user)
+	if currentGC == nil || currentGC.Game == nil{
+		return errors.New("handleInlineQuery: no game")
+	}else{
+		if err != nil{
+			log.Println(err)
+		}else{
+			_,playerIdx := currentGC.Game.FindPlayer(user)
+			playerHand,err := currentGC.Game.GetHand(playerIdx)
+			if err!= nil{
+				log.Println(err)
+			}else{
+				var cards []interface{}
+				for idx,card := range playerHand.Cards{
+					id,err := strconv.Atoi(query.ID)
+					if err!= nil{
+						log.Println(err)
+					}else{
+						c := fmt.Sprintf("%s %d\n", card.Suit, card.Rank)
+						article := tgbotapi.NewInlineQueryResultArticle(strconv.Itoa(id+idx),c,c)
+						article.Description=c
+						cards = append(cards, article)
+					}
+				}
+
+				inlineConfig := tgbotapi.InlineConfig{
+					InlineQueryID: query.ID,
+					IsPersonal: true,
+					CacheTime: 0,
+					Results: cards,
+				}
+
+				_, err := mc.bot.AnswerInlineQuery(inlineConfig)
+				if err != nil {
+					fmt.Println("Error answering inline query:", err)
+				}
+			}
 		}
 	}
-	return nil,errors.New("No controller found")
+	return nil
+	// article := tgbotapi.NewInlineQueryResultArticleMarkdown(query.ID, "", "")
+	// article.Description = "Your Cards"
+
+	// inlineConf := tgbotapi.InlineConfig{
+	// 	InlineQueryID: query.ID,
+	// 	IsPersonal:    true,
+	// 	CacheTime:     0,
+	// 	Results:       []interface{}{article},
+	// }
+
+	// mc.bot.AnswerInlineQuery(inlineConf)
+}
+
+
+func (mc *MessageController) FindGameController (e interface{}) (*GameController,error){
+	switch m := e.(type) {
+	case int64: //chatID
+		for _,controller := range mc.GameControllers{
+			if controller.chatID == m{
+				return controller,nil
+			}
+		}
+	case *tgbotapi.User:
+		for _,controller := range mc.GameControllers{
+				for _,player := range controller.Game.Players{
+					if player.ID == m.ID{
+						return controller,nil
+					}
+				}
+			}
+	}
+	return nil,errors.New("no controller found/user not found")
 }
 
 func (mc *MessageController) RemoveGameController (chatID int64){
