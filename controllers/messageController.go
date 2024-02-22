@@ -3,7 +3,6 @@ package controllers
 import (
 	"bridge/entities"
 	"bridge/utils"
-	"math/rand"
 	"errors"
 	"fmt"
 	"log"
@@ -31,6 +30,7 @@ func NewMessageController(bot *tgbotapi.BotAPI) *MessageController{
 
 //Listener
 func (mc *MessageController) StartListening() {
+	// mc.bot.MakeRequest()
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
 	fmt.Println("Start Listening...")
@@ -189,16 +189,15 @@ func (mc *MessageController) HandleInlineQuery (query *tgbotapi.InlineQuery) err
 				log.Println(err)
 			}else{
 				var stickers []interface{}
-				for _,card:= range playerHand.Cards{
-					_,err := strconv.Atoi(query.ID)
+				for idx,card:= range playerHand.Cards{
+					id,err := strconv.Atoi(query.ID)
 					if err!= nil{
 						log.Println(err)
 					}else{
 						c := fmt.Sprintf("%s_%d", card.Suit, card.Rank)
 						//Search for card ID
-						fmt.Printf("%s\n", c)
 						cardID := entities.NameToID(c)
-						article := tgbotapi.NewInlineQueryResultCachedSticker(strconv.Itoa(rand.Intn(1000000)),cardID,c) //nto sure if rand is best choice
+						article := tgbotapi.NewInlineQueryResultCachedSticker(strconv.Itoa(id+idx),cardID,c) //nto sure if rand is best choice
 						stickers = append(stickers,article)
 					}
 				}
@@ -206,11 +205,11 @@ func (mc *MessageController) HandleInlineQuery (query *tgbotapi.InlineQuery) err
 				inlineConfig := tgbotapi.InlineConfig{
 					InlineQueryID: query.ID,
 					IsPersonal: true,
-					CacheTime: 0,
+					CacheTime: 10,
 					Results: stickers,
 				}
 
-				_, err := mc.bot.(inlineConfig)
+				_, err := mc.bot.Request(inlineConfig)
 				if err != nil {
 					fmt.Println("Error answering inline query:", err)
 				}

@@ -14,9 +14,9 @@ type Game struct{
 	ChatID int64
 	ID uint32
 	Players []*tgbotapi.User
-	Deck Deck
+	Deck *Deck
 	// currentBid Bid
-	Hands []Hand
+	Hands []*Hand
 	InProgress bool
 }
 
@@ -26,9 +26,9 @@ func NewGame (bot *tgbotapi.BotAPI, chatID int64) *Game{
 		ChatID: chatID,
 		ID: rand.Uint32(),
 		Players: []*tgbotapi.User{},
-		Deck : *NewDeck(),
+		Deck : NewDeck(),
 		// currentBid: Bid{},
-		Hands: []Hand{},
+		Hands: []*Hand{},
 		InProgress: false,
 	}
 }
@@ -39,10 +39,14 @@ func (g *Game) StartGame (){
 		g.Deck.Shuffle()
 		g.Deck.shuffled = true
 		tmp := g.Deck.cards
-		g.Hands = append(g.Hands, Hand{g.Players[0],tmp[:13]})
+		g.Hands = append(g.Hands, &Hand{g.Players[0],tmp[:13],make([]int,0)})
 		// g.hands = append(g.hands, Hand{g.Players[1],tmp[13:26]})
 		// g.hands = append(g.hands, Hand{g.Players[2],tmp[26:39]})
 		// g.hands = append(g.hands, Hand{g.Players[3],tmp[39:]})
+		for _,hand := range g.Hands{
+			hand.SortHand()
+			fmt.Println(hand.SuitIndex)
+		}
 	}
 }
 
@@ -89,13 +93,13 @@ func (g *Game) CheckPlayers (bot *tgbotapi.BotAPI, chatID int64, roomID uint32,m
 	}
 }
 
-func (g *Game) GetHand (idx int) (Hand,error){
+func (g *Game) GetHand (idx int) (*Hand,error){
 	for index,hand := range g.Hands{
 		if index==idx{
 			return hand,nil
 		}
 	}
-	return Hand{},errors.New("Hand not found")
+	return &Hand{},errors.New("Hand not found")
 }
 
 
