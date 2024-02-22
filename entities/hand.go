@@ -1,32 +1,44 @@
 package entities
-import(
+
+import (
+	"sort"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 type Hand struct{
 	player *tgbotapi.User
-	Cards []Card
+	Cards []*Card
+	SuitIndex []int
 }
 
-func NewHand (player *tgbotapi.User, card []Card) *Hand{
-	return &Hand{
-		player:player,
-		Cards:card,
+func (h *Hand) SortHand() {
+	//Sort cards
+	sort.Sort(BySuitAndRank(h.Cards))
+	h.SuitIndex = make([]int, 0)
+
+	//Return suits indexes
+	suits:= [3]Suit{Diamonds,Hearts,Spades}
+	index := 0
+
+	for idx,card := range h.Cards{
+		if len(h.SuitIndex) == 3{
+			break
+		}
+		if card.Suit == suits[index]{
+			h.SuitIndex=append(h.SuitIndex,idx)
+			if index < 2{
+				index = index+1
+			}
+		}
 	}
 }
 
-// func (h *Hand) SortSuit(hand Hand) map[string][]Card {
-// 	sortedCards := make(map[string][]Card)
+type BySuitAndRank []*Card
 
-// 	for _, card := range hand.Cards {
-// 		// Check if the suit is already a key in the map
-// 		if _, ok := sortedCards[string(card.Suit)]; !ok {
-// 			// If not, initialize a slice for the suit
-// 			sortedCards[string(card.Suit)] = make([]Card, 0)
-// 		}
-
-// 		// Append the card to the corresponding suit in the map
-// 		sortedCards[string(card.Suit)] = append(sortedCards[string(card.Suit)], card)
-// 	}
-
-// 	for _, key := range sortedCards
-// }
+func (a BySuitAndRank) Len() int           { return len(a) }
+func (a BySuitAndRank) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a BySuitAndRank) Less(i, j int) bool {
+    if a[i].Suit == a[j].Suit {
+        return a[i].Rank < a[j].Rank
+    }
+    return a[i].Suit < a[j].Suit
+}

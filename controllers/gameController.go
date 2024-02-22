@@ -74,8 +74,8 @@ func (gc *GameController) RemoveGame() {
 		ChatID:     gc.Game.ChatID,
 		ID:         gc.Game.ID + 1, // Incrementing the ID for a new game
 		Players:    []*tgbotapi.User{},
-		Deck:       *entities.NewDeck(), // Example: InitializeDeck creates a new deck
-		Hands:      []entities.Hand{},
+		Deck:       entities.NewDeck(), // Example: InitializeDeck creates a new deck
+		Hands:      []*entities.Hand{},
 		InProgress: false,
 	}
 	fmt.Printf("Deleted room %d\n", id)

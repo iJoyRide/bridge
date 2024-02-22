@@ -5,7 +5,7 @@ import(
 	"fmt"
 )
 type Deck struct{
-	cards []Card
+	cards []*Card
 	shuffled bool
 }
 
@@ -17,13 +17,13 @@ func NewDeck () *Deck{
 	}
 }
 
-func LoadDeck () []Card {
-	var cards []Card
+func LoadDeck () []*Card {
+	var cards []*Card
 	fmt.Println("Loading Deck for new game...")
 
 	for _, suit := range []Suit{Spades, Hearts, Diamonds, Clubs} {
 		for rank := Two; rank <= Ace; rank++ {
-			cards = append(cards,Card{suit,rank})
+			cards = append(cards,&Card{suit,rank})
 		}
 	}
 
