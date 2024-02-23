@@ -47,7 +47,6 @@ func (g *Game) StartGame (){
 			// g.hands = append(g.hands, Hand{g.Players[3],tmp[39:]})
 			for _,hand := range g.Hands{
 				hand.SortHand()
-				fmt.Println(hand.SuitIndex)
 				if !hand.CountPoints(){
 					g.Deck.shuffled = false
 					msg:= fmt.Sprintf("Restarting Game... Player %s lacking points\n", hand.player.UserName)
@@ -58,12 +57,14 @@ func (g *Game) StartGame (){
 
 			//Check to see if need to restart game
 			if !restartGame{
-				//Restart game
+				//Continue game
 				break
 			}
 			restartGame = false
 		}
 	}
+	//Bidding logic
+	//Game Play logic
 }
 
 
@@ -82,7 +83,7 @@ func (g *Game) AddPlayer (user *tgbotapi.User) (error){
 		g.Players = append(g.Players, user)
 		return nil
 	}
-	return errors.New("player already in game")
+	return errors.New("Player already in game")
 }
 
 

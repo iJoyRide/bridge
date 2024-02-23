@@ -154,7 +154,7 @@ func (mc *MessageController) HandleCallbackQuery (query *tgbotapi.CallbackQuery)
 	// Extract relevant information from the callback query
 	user := query.From
 	msgID := query.Message.MessageID
-	parts := strings.Split(query.Data,":")
+	parts := strings.Split(query.Data,":") //Split by ":", use different characters for subsequent splits
 	command := parts[0]
 	data := parts[1]
 
@@ -163,22 +163,47 @@ func (mc *MessageController) HandleCallbackQuery (query *tgbotapi.CallbackQuery)
 	case "join_game":
 		// Respond to the button click
 		roomID,err:=strconv.ParseUint(data,10,32)
-		fmt.Printf("Room ID: %d, user: %s pressed the button.\n",roomID, user.UserName)
-		if err != nil {
-			fmt.Println(err)
-		} else {
-			roomID:=uint32(roomID)
-			gc,err := mc.FindGameController(query.Message.Chat.ID)
-			if err != nil{
+		duplicate,id := mc.CheckPlayerDuplicate(query.Message.Chat.ID,user)
+		if duplicate && id != 0{ //Check if player is in another game
+			fmt.Println("User in another room, not allowed")
+			msg := fmt.Sprintf("Player %s already in room, leave that room to join this game.", user.UserName)
+			btn := []tgbotapi.InlineKeyboardButton{utils.CreateButton("Force Quit","quit_game:"+strconv.FormatInt(id,10)+"_"+strconv.FormatInt(user.ID,10))}
+			keyboard := utils.CreateInlineMarkup(btn)
+			utils.SendMessageWithMarkup(mc.bot,query.Message.Chat.ID,msg,keyboard)
+		}else{
+			fmt.Printf("Room ID: %d, user: %s pressed the button.\n",roomID, user.UserName)
+			if err != nil {
+				fmt.Println(err)
+			} else {
+				roomID:=uint32(roomID)
+				gc,err := mc.FindGameController(query.Message.Chat.ID)
+				if err != nil{
+					fmt.Println(err)
+				}else{
+					game := gc.Game
+					// if len(game.Players) < 4{
+					if len(game.Players) < 1{
+							gc.NotifyAddPlayer(query.From,roomID,msgID) //Add Player
+							game:= gc.Game
+							game.CheckPlayers(mc.bot,query.Message.Chat.ID,roomID,msgID) //Check if room is full, else start game
+					}
+				}
+			}
+		}
+	case "quit_game": //In the case where group/chat is deleted and user unable to leave game, allow them to force quit from current chat
+		quit_game_split := strings.Split(data,"_") //Split by "_"
+		chatID,_ := strconv.ParseInt(quit_game_split[0],10,64)
+		userID,_ := strconv.ParseInt(quit_game_split[1],10,64)
+		if query.From.ID == userID{
+			gc,err := mc.FindGameController(chatID)
+			if err!=nil{
 				fmt.Println(err)
 			}else{
-				game := gc.Game
-				// if len(game.Players) < 4{
-				if len(game.Players) < 1{
-						gc.NotifyAddPlayer(query.From,roomID,msgID)
-						game:= gc.Game
-						game.CheckPlayers(mc.bot,query.Message.Chat.ID,roomID,msgID) //Check if room is full, else start game
-				}
+				id := gc.chatID
+				mc.RemoveGameController(id)
+				gc.RemoveGame()
+				fmt.Printf("Removed game controller %d\n", id)
+				utils.SendMessage(mc.bot,chatID,fmt.Sprintf("Someone left the game"))
 			}
 		}
 	default:
@@ -233,6 +258,16 @@ func (mc *MessageController) HandleInlineQuery (query *tgbotapi.InlineQuery) err
 
 }
 
+func (mc *MessageController) CheckPlayerDuplicate (chatID int64, user *tgbotapi.User) (bool,int64){
+	for _, gc := range mc.GameControllers{
+		inGame,_:=gc.Game.FindPlayer(user)
+		if inGame && gc.Game.ChatID != chatID{
+			return true,gc.Game.ChatID
+		}
+	}
+
+	return false,0
+}
 
 func (mc *MessageController) FindGameController (e interface{}) (*GameController,error){
 	switch m := e.(type) {

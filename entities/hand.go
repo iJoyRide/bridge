@@ -73,7 +73,6 @@ func (h *Hand) SortHand() {
 	h.SuitIndex = make([]int, 0)
 
 	//Count points
-
 	suits:= [3]Suit{Diamonds,Hearts,Spades}
 	index := 0
 
