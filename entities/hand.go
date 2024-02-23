@@ -1,7 +1,10 @@
 package entities
 
 import (
+	"fmt"
 	"sort"
+	"strconv"
+	"strings"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 type Hand struct{
@@ -10,12 +13,67 @@ type Hand struct{
 	SuitIndex []int
 }
 
+func (h *Hand) RemoveCard(id string){
+	//Find card
+	var index int
+	index = -1
+	parts := strings.Split(id,"_")
+	suit := parts[0]
+	rank,err := strconv.Atoi(parts[1])
+	if err!=nil{
+		fmt.Println("cannot convert to str:RemoveCard")
+	}
+	//loop through hand
+	for idx,card := range h.Cards{
+		if suit == string(card.Suit) && rank == int(card.Rank){
+			index =idx
+			break
+		}
+	}
+
+	if index == -1{
+		fmt.Printf("Player %s does not have card %s\n", h.player, id)
+	}else{
+		//Remove card
+		h.Cards = append(h.Cards[:index], h.Cards[index+1:]...)
+
+		//Resort card
+		h.SortHand()
+	}
+}
+
+func (h *Hand) CountPoints() bool{
+	//Count no of suits
+	var points int
+	var index []int
+	points = 0
+	index = append(index, h.SuitIndex[0])
+	index = append(index,h.SuitIndex[1]-h.SuitIndex[0])
+	index = append(index,h.SuitIndex[2]-h.SuitIndex[1])
+	index = append(index,13 - h.SuitIndex[2])
+
+	for _,suit := range index{
+		if suit >= 5{
+			points += suit-4
+		}
+	}
+
+	for _,card := range h.Cards{
+		if int(card.Rank) > 10{
+			points += int(card.Rank)-10
+		}
+	}
+
+	return points >= 4
+}
+
 func (h *Hand) SortHand() {
 	//Sort cards
 	sort.Sort(BySuitAndRank(h.Cards))
 	h.SuitIndex = make([]int, 0)
 
-	//Return suits indexes
+	//Count points
+
 	suits:= [3]Suit{Diamonds,Hearts,Spades}
 	index := 0
 

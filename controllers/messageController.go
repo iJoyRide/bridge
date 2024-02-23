@@ -8,7 +8,6 @@ import (
 	"log"
 	"strconv"
 	"strings"
-
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
@@ -131,8 +130,22 @@ func (mc *MessageController) HandleMessage(update tgbotapi.Update) {
 		}
 	}else if update.Message.Sticker != nil{
 		sticker := update.Message.Sticker
+		chatID := update.Message.Chat.ID
+		user := update.Message.From
 		id := entities.IDToName(sticker.FileUniqueID)
-		fmt.Printf("%s %s\n",sticker.FileID,id)
+		gc,err := mc.FindGameController(chatID)
+		if !gc.Game.InProgress{
+			if err != nil{
+				fmt.Println(err)
+			}else{
+				game := gc.Game
+				_,idx:=game.FindPlayer(user)
+				hand := gc.Game.Hands[idx]
+				hand.RemoveCard(id)
+			}
+		}else{
+			fmt.Println("Game has not started, cannot throw card")
+		}
 	}
 }
 
@@ -205,7 +218,7 @@ func (mc *MessageController) HandleInlineQuery (query *tgbotapi.InlineQuery) err
 				inlineConfig := tgbotapi.InlineConfig{
 					InlineQueryID: query.ID,
 					IsPersonal: true,
-					CacheTime: 10,
+					CacheTime: 1,
 					Results: stickers,
 				}
 
