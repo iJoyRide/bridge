@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
 //Class
@@ -30,13 +30,11 @@ func NewMessageController(bot *tgbotapi.BotAPI) *MessageController{
 
 //Listener
 func (mc *MessageController) StartListening() {
+	// mc.bot.MakeRequest()
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
 	fmt.Println("Start Listening...")
-	updates, err := mc.bot.GetUpdatesChan(u)
-	if err != nil {
-		log.Fatal(err)
-	}
+	updates := mc.bot.GetUpdatesChan(u)
 	for update := range updates {
 		if update.Message != nil{
 			mc.HandleMessage(update)
@@ -131,6 +129,10 @@ func (mc *MessageController) HandleMessage(update tgbotapi.Update) {
 		default:
 			utils.SendMessage(mc.bot,update.Message.Chat.ID, "Unknown command. Type /help for a list of available commands.")
 		}
+	}else if update.Message.Sticker != nil{
+		sticker := update.Message.Sticker
+		id := entities.IDToName(sticker.FileUniqueID)
+		fmt.Printf("%s %s\n",sticker.FileID,id)
 	}
 }
 
@@ -158,7 +160,8 @@ func (mc *MessageController) HandleCallbackQuery (query *tgbotapi.CallbackQuery)
 				fmt.Println(err)
 			}else{
 				game := gc.Game
-				if len(game.Players) < 4{
+				// if len(game.Players) < 4{
+				if len(game.Players) < 1{
 						gc.NotifyAddPlayer(query.From,roomID,msgID)
 						game:= gc.Game
 						game.CheckPlayers(mc.bot,query.Message.Chat.ID,roomID,msgID) //Check if room is full, else start game
@@ -185,27 +188,28 @@ func (mc *MessageController) HandleInlineQuery (query *tgbotapi.InlineQuery) err
 			if err!= nil{
 				log.Println(err)
 			}else{
-				var cards []interface{}
-				for idx,card := range playerHand.Cards{
+				var stickers []interface{}
+				for idx,card:= range playerHand.Cards{
 					id,err := strconv.Atoi(query.ID)
 					if err!= nil{
 						log.Println(err)
 					}else{
-						c := fmt.Sprintf("%s %d\n", card.Suit, card.Rank)
-						article := tgbotapi.NewInlineQueryResultArticle(strconv.Itoa(id+idx),c,c)
-						article.Description=c
-						cards = append(cards, article)
+						c := fmt.Sprintf("%s_%d", card.Suit, card.Rank)
+						//Search for card ID
+						cardID := entities.NameToID(c)
+						article := tgbotapi.NewInlineQueryResultCachedSticker(strconv.Itoa(id+idx),cardID,c) //nto sure if rand is best choice
+						stickers = append(stickers,article)
 					}
 				}
 
 				inlineConfig := tgbotapi.InlineConfig{
 					InlineQueryID: query.ID,
 					IsPersonal: true,
-					CacheTime: 0,
-					Results: cards,
+					CacheTime: 10,
+					Results: stickers,
 				}
 
-				_, err := mc.bot.AnswerInlineQuery(inlineConfig)
+				_, err := mc.bot.Request(inlineConfig)
 				if err != nil {
 					fmt.Println("Error answering inline query:", err)
 				}
@@ -213,17 +217,7 @@ func (mc *MessageController) HandleInlineQuery (query *tgbotapi.InlineQuery) err
 		}
 	}
 	return nil
-	// article := tgbotapi.NewInlineQueryResultArticleMarkdown(query.ID, "", "")
-	// article.Description = "Your Cards"
 
-	// inlineConf := tgbotapi.InlineConfig{
-	// 	InlineQueryID: query.ID,
-	// 	IsPersonal:    true,
-	// 	CacheTime:     0,
-	// 	Results:       []interface{}{article},
-	// }
-
-	// mc.bot.AnswerInlineQuery(inlineConf)
 }
 
 

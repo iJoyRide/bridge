@@ -5,7 +5,7 @@ import (
 	"bridge/utils"
 	"fmt"
 	"strings"
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
 type GameController struct{
@@ -69,7 +69,15 @@ func (gc *GameController) AddGame(game entities.Game) {
 
 func (gc *GameController) RemoveGame() {
 	id := gc.Game.ID
-	gc.Game = &entities.Game{}
+	gc.Game = &entities.Game{
+		Bot:        gc.Game.Bot,
+		ChatID:     gc.Game.ChatID,
+		ID:         gc.Game.ID + 1, // Incrementing the ID for a new game
+		Players:    []*tgbotapi.User{},
+		Deck:       entities.NewDeck(), // Example: InitializeDeck creates a new deck
+		Hands:      []*entities.Hand{},
+		InProgress: false,
+	}
 	fmt.Printf("Deleted room %d\n", id)
 }
 
