@@ -35,19 +35,36 @@ func NewGame (bot *tgbotapi.BotAPI, chatID int64) *Game{
 
 // TODO
 func (g *Game) StartGame (){
-	if !g.Deck.shuffled{
-		g.Deck.Shuffle()
-		g.Deck.shuffled = true
-		tmp := g.Deck.cards
-		g.Hands = append(g.Hands, &Hand{g.Players[0],tmp[:13],make([]int,0)})
-		// g.hands = append(g.hands, Hand{g.Players[1],tmp[13:26]})
-		// g.hands = append(g.hands, Hand{g.Players[2],tmp[26:39]})
-		// g.hands = append(g.hands, Hand{g.Players[3],tmp[39:]})
-		for _,hand := range g.Hands{
-			hand.SortHand()
-			fmt.Println(hand.SuitIndex)
+	var restartGame bool
+	for{
+		if !g.Deck.shuffled{
+			g.Deck.Shuffle()
+			g.Deck.shuffled = true
+			tmp := g.Deck.cards
+			g.Hands = append(g.Hands, &Hand{g.Players[0],tmp[:13],make([]int,0)})
+			// g.hands = append(g.hands, Hand{g.Players[1],tmp[13:26]})
+			// g.hands = append(g.hands, Hand{g.Players[2],tmp[26:39]})
+			// g.hands = append(g.hands, Hand{g.Players[3],tmp[39:]})
+			for _,hand := range g.Hands{
+				hand.SortHand()
+				if !hand.CountPoints(){
+					g.Deck.shuffled = false
+					msg:= fmt.Sprintf("Restarting Game... Player %s lacking points\n", hand.player.UserName)
+					utils.SendMessage(g.Bot,g.ChatID,msg)
+					restartGame = true
+				}
+			}
+
+			//Check to see if need to restart game
+			if !restartGame{
+				//Continue game
+				break
+			}
+			restartGame = false
 		}
 	}
+	//Bidding logic
+	//Game Play logic
 }
 
 
@@ -66,7 +83,7 @@ func (g *Game) AddPlayer (user *tgbotapi.User) (error){
 		g.Players = append(g.Players, user)
 		return nil
 	}
-	return errors.New("player already in game")
+	return errors.New("Player already in game")
 }
 
 
