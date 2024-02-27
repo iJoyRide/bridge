@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"os"
 
-	"bridge/webcontrollers"
+	"bridge/webapi/webcontrollers"
 )
 
 func Handler(w http.ResponseWriter, r *http.Request) {
