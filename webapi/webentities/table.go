@@ -7,7 +7,7 @@ func NewTable() *Table {
 func CreateNewTable(tableID uint32) *Table {
 	return &Table{
 		TableID: tableID,
-		Count:   0,
+		Count:   1,
 		Trump:   "",
 		Bid:     0,
 		Queue:   0,
