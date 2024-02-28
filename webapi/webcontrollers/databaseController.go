@@ -71,7 +71,31 @@ func (db *DatabaseController) GetPlayerByChatID(chatID int64, player *webentitie
 	return nil
 }
 
-func (db *DatabaseController) GetTableByChatID(tableID uint32, table *webentities.Table) error {
+func (db *DatabaseController) DeletePlayersByTableID(tableID uint32) error {
+	collectionName := os.Getenv("COLLECTION_PLAYER")
+	collection := db.DB.Collection(collectionName)
+	filter := bson.M{"table_id": tableID}
+	result, err := collection.DeleteMany(context.Background(), filter)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("Deleted %v document(s)\n", result.DeletedCount)
+	return nil
+}
+
+// func (db *DatabaseController) DeletePlayerByChatID(tableID uint32) error {
+// 	collectionName := os.Getenv("COLLECTION_TABLE")
+// 	collection := db.DB.Collection(collectionName)
+// 	filter := bson.M{"table_id": tableID}
+// 	result, err := collection.DeleteOne(context.Background(), filter)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	fmt.Printf("Deleted %v document(s)\n", result.DeletedCount)
+// 	return nil
+// }
+
+func (db *DatabaseController) GetTableByTableID(tableID uint32, table *webentities.Table) error {
 	collectionName := os.Getenv("COLLECTION_TABLE")
 	collection := db.DB.Collection(collectionName)
 	filter := bson.M{"table_id": tableID}
@@ -105,4 +129,20 @@ func (db *DatabaseController) InsertTable(table *webentities.Table) error {
 		return err
 	}
 	return nil
+}
+
+func (db *DatabaseController) UpdateTable(table *webentities.Table) {
+	collectionName := os.Getenv("COLLECTION_TABLE")
+	collection := db.DB.Collection(collectionName)
+	filter := bson.M{"table_id": table.TableID}
+	count := table.Count + 1
+	update := bson.M{"$set": bson.M{"count": count}}
+
+	result, err := collection.UpdateOne(context.Background(), filter, update)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Printf("Updated %v document(s)\n", result.ModifiedCount)
+
 }

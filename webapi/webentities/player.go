@@ -8,7 +8,7 @@ func CreateNewPlayer(chatID int64, tableID uint32) *Player {
 	return &Player{
 		ChatID:  chatID,
 		TableID: tableID,
-		// Hand:     *Hand{},
+		// Hand:     Hand{}
 		Position: 0,
 		Wins:     0,
 	}
