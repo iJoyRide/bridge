@@ -97,7 +97,7 @@ func (mc *MessageController) HandleMessage(update tgbotapi.Update) {
 			utils.SendMessage(mc.Bot, update.Message.Chat.ID, "A Player is leaving game")
 			if mc.CheckPlayer(update.Message.Chat.ID) {
 				mc.DB.GetPlayerByChatID(update.Message.Chat.ID, &mc.Game.Player)
-				mc.DB.DeletePlayersByTableID(*&mc.Game.Player.TableID)
+				mc.DB.DeletePlayersByTableID(mc.Game.Player.TableID)
 				msg := fmt.Sprintf("%s has left room %d\n\nShutting down game...", update.Message.From, mc.Game.Player.TableID)
 				utils.SendMessage(mc.Bot, update.Message.Chat.ID, msg)
 			} else {
